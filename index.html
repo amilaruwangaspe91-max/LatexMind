@@ -18,6 +18,8 @@
       --warn-bg: #fef3c7;
       --danger: #b91c1c;
       --danger-bg: #fee2e2;
+      --info: #1d4ed8;
+      --info-bg: #dbeafe;
       --text: #1f2937;
       --muted: #6b7280;
       --border: #e5e7eb;
@@ -62,7 +64,7 @@
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -78,7 +80,7 @@
 
     .main-grid {
       display: grid;
-      grid-template-columns: 360px 1fr;
+      grid-template-columns: 370px 1fr;
       gap: 18px;
       align-items: start;
     }
@@ -95,6 +97,20 @@
     }
     .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: var(--primary); }
 
+    .section-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 9px;
+      padding: 11px;
+      margin-bottom: 12px;
+    }
+    .section-subtitle {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .form-group { margin-bottom: 10px; }
     label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: #374151; }
@@ -104,6 +120,7 @@
       border: 1px solid #d1d5db;
       border-radius: 7px;
       font-size: 0.85rem;
+      background: #fff;
     }
 
     .defect-item {
@@ -149,13 +166,14 @@
     .badge-heat { background: var(--warn-bg); color: var(--warn); }
     .badge-skin { background: var(--danger-bg); color: var(--danger); }
     .badge-other { background: #e5e7eb; color: #374151; }
+    .badge-downtime { background: var(--info-bg); color: var(--info); }
   </style>
 </head>
 <body>
   <header>
     <div>
       <h1>Melkam Latex Mind — Dunlop Production Log</h1>
-      <p>8-Cycle Baseline + Live Batch, Temp, ZnO/SSF/Gel Time & Defect Indexer</p>
+      <p>8-Cycle Baseline + Live Batch, Temp, ZnO/SSF/Gel Time, Downtime & Defect Indexer</p>
     </div>
     <div class="btn-group">
       <button class="btn-light" onclick="exportCSV()">Export CSV (Excel)</button>
@@ -210,6 +228,31 @@
           <input type="text" id="gelTime" placeholder="e.g. 2.28" />
         </div>
 
+        <div class="section-box">
+          <div class="section-subtitle">Production Downtime (නිෂ්පාදන ඇනහිටීම්)</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Downtime (Minutes)</label>
+              <input type="number" min="0" id="downtimeMins" placeholder="e.g. 30" />
+            </div>
+            <div class="form-group">
+              <label>Stoppage Reason</label>
+              <select id="downtimeReason">
+                <option value="None">None (Normal)</option>
+                <option value="Raw Latex Shortage">Raw Latex Shortage</option>
+                <option value="Oakes / Foaming Issue">Oakes / Foaming Issue</option>
+                <option value="Steam Tunnel / Mould Issue">Steam Tunnel / Mould Issue</option>
+                <option value="Power / Utility Stoppage">Power / Utility Stoppage</option>
+                <option value="Other Stoppage">Other Stoppage</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Downtime Notes</label>
+            <input type="text" id="downtimeNote" placeholder="e.g. Waiting for new latex batch / mould change" />
+          </div>
+        </div>
+
         <div class="form-group">
           <label>Defects</label>
           <div id="defectRows"></div>
@@ -233,13 +276,17 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Indexed Cycles Table</div>
+        <div class="card-title">Indexed Cycles & Downtime Table</div>
         <div class="filter-bar">
-          <input type="text" id="searchInput" placeholder="Search mould, defect, cycle..." oninput="renderTable()" />
+          <input type="text" id="searchInput" placeholder="Search mould, defect, downtime..." oninput="renderTable()" />
           <select id="batchFilter" onchange="renderTable()">
             <option value="ALL">All Batches</option>
             <option value="Initial Batch">Initial Batch</option>
             <option value="New Latex Batch">New Latex Batch</option>
+          </select>
+          <select id="downtimeFilter" onchange="renderTable()">
+            <option value="ALL">All Cycles (With/Without Downtime)</option>
+            <option value="HAS_DOWNTIME">Only With Downtime</option>
           </select>
         </div>
         <div class="table-wrap">
@@ -250,8 +297,9 @@
                 <th>Temp (°C)</th>
                 <th>ZnO & SSF</th>
                 <th>Gel Time</th>
+                <th>Production Downtime</th>
                 <th>Defects Breakdown</th>
-                <th>Total</th>
+                <th>Total Def.</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -267,6 +315,7 @@
       {
         id: 1, label: "1st Cycle", batch: "Initial Batch", startTemp: 23.4, endTemp: 23.5,
         zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "-",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Estd", type: "Unclassified", qty: 3 },
           { mould: "Queen", type: "Unclassified", qty: 2 },
@@ -277,6 +326,7 @@
       {
         id: 2, label: "2nd Cycle", batch: "Initial Batch", startTemp: 23.5, endTemp: 23.5,
         zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "-",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Queen", type: "Heat Mark", qty: 1 },
           { mould: "Estd.mnzn", type: "Loose Skin", qty: 1 },
@@ -288,6 +338,7 @@
       {
         id: 3, label: "3rd Cycle", batch: "Initial Batch", startTemp: 23.4, endTemp: 23.5,
         zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "2.31",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Queen", type: "Heat Mark", qty: 2 },
           { mould: "Estd", type: "Heat Mark", qty: 2 },
@@ -300,6 +351,7 @@
       {
         id: 4, label: "4th Cycle", batch: "Initial Batch", startTemp: 23.5, endTemp: 23.6,
         zno: "14.0 (15s-100ml)", ssf: "6.9 (27s-100ml)", gelTime: "2.25",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Estd", type: "Heat Mark", qty: 2 },
           { mould: "F.C. T2", type: "Heat Mark", qty: 1 },
@@ -312,6 +364,7 @@
       {
         id: 5, label: "5th Cycle", batch: "Initial Batch", startTemp: 23.6, endTemp: 23.7,
         zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "2.28",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Queen", type: "Heat Mark", qty: 1 },
           { mould: "Estd.mnzn", type: "Loose Skin", qty: 1 },
@@ -323,6 +376,7 @@
       {
         id: 6, label: "6th Cycle", batch: "New Latex Batch", startTemp: 24.9, endTemp: 25.2,
         zno: "14.5 (15s-100ml)", ssf: "6.9 (27s-100ml)", gelTime: "2.22",
+        downtimeMins: 0, downtimeReason: "Raw Latex Shortage", downtimeNote: "Started after new latex batch arrival",
         defects: [
           { mould: "Estd", type: "Heat Mark", qty: 2 },
           { mould: "F.C. T3", type: "Heat Mark", qty: 1 },
@@ -333,6 +387,7 @@
       {
         id: 7, label: "7th Cycle", batch: "New Latex Batch", startTemp: 25.5, endTemp: 25.9,
         zno: "14.0 (15s-100ml)", ssf: "6.2 (29s-100ml)", gelTime: "2.17",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Monozone", type: "Loose Skin", qty: 1 },
           { mould: "Baby", type: "Heat Mark", qty: 2 },
@@ -343,6 +398,7 @@
       {
         id: 8, label: "8th Cycle", batch: "New Latex Batch", startTemp: 26.3, endTemp: null,
         zno: "11.2 (19s-100ml)", ssf: "6.0 (29s-100ml)", gelTime: "2.32+",
+        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
         defects: [
           { mould: "Monozone", type: "Loose Skin", qty: 3 },
           { mould: "Baby", type: "Loose Skin", qty: 3 },
@@ -355,7 +411,7 @@
       }
     ];
 
-    const STORAGE_KEY = "melkam_latex_cycles_v1";
+    const STORAGE_KEY = "melkam_latex_cycles_v2";
     let cycles = loadCycles();
     let tempChart, defectChart;
 
@@ -403,6 +459,10 @@
       });
 
       const endVal = document.getElementById("endTemp").value;
+      const dtMins = parseInt(document.getElementById("downtimeMins").value, 10) || 0;
+      const dtReason = document.getElementById("downtimeReason").value;
+      const dtNote = document.getElementById("downtimeNote").value.trim() || "-";
+
       cycles.push({
         id: Date.now(),
         label: document.getElementById("cycleLabel").value.trim(),
@@ -412,6 +472,9 @@
         zno: document.getElementById("znoInfo").value.trim() || "-",
         ssf: document.getElementById("ssfInfo").value.trim() || "-",
         gelTime: document.getElementById("gelTime").value.trim() || "-",
+        downtimeMins: dtMins,
+        downtimeReason: dtMins > 0 && dtReason === "None" ? "Other Stoppage" : dtReason,
+        downtimeNote: dtNote,
         defects
       });
 
@@ -444,6 +507,7 @@
       const totalDefects = allTotals.reduce((a, b) => a + b.total, 0);
       const totalHeat = allTotals.reduce((a, b) => a + b.heat, 0);
       const totalSkin = allTotals.reduce((a, b) => a + b.skin, 0);
+      const totalDowntimeMins = cycles.reduce((a, b) => a + (b.downtimeMins || 0), 0);
       const maxTemp = Math.max(...cycles.map(c => Math.max(c.startTemp || 0, c.endTemp || 0)));
 
       document.getElementById("kpiGrid").innerHTML = `
@@ -466,6 +530,11 @@
           <div class="kpi-label">Loose Skin</div>
           <div class="kpi-value" style="color:#b91c1c">${totalSkin}</div>
           <div class="kpi-sub">Surface peeling / gel</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Downtime</div>
+          <div class="kpi-value" style="color:#1d4ed8">${totalDowntimeMins}m</div>
+          <div class="kpi-sub">Total stoppage logged</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Peak Latex Temp</div>
@@ -515,12 +584,15 @@
     function renderTable() {
       const q = document.getElementById("searchInput").value.toLowerCase().trim();
       const batchFilter = document.getElementById("batchFilter").value;
+      const downtimeFilter = document.getElementById("downtimeFilter").value;
       const tbody = document.getElementById("cycleTableBody");
 
       const filtered = cycles.filter(c => {
         if (batchFilter !== "ALL" && c.batch !== batchFilter) return false;
+        const hasDt = (c.downtimeMins || 0) > 0 || (c.downtimeReason && c.downtimeReason !== "None");
+        if (downtimeFilter === "HAS_DOWNTIME" && !hasDt) return false;
         if (!q) return true;
-        const blob = `${c.label} ${c.batch} ${c.zno} ${c.ssf} ${c.gelTime} ${c.defects.map(d => d.mould + " " + d.type).join(" ")}`.toLowerCase();
+        const blob = `${c.label} ${c.batch} ${c.zno} ${c.ssf} ${c.gelTime} ${c.downtimeMins || 0} ${c.downtimeReason || ""} ${c.downtimeNote || ""} ${c.defects.map(d => d.mould + " " + d.type).join(" ")}`.toLowerCase();
         return blob.includes(q);
       });
 
@@ -531,12 +603,21 @@
           return `<span class="badge ${cls}">${d.mould}: ${d.qty} (${d.type})</span>`;
         }).join("");
 
+        const dtMins = c.downtimeMins || 0;
+        const dtReason = c.downtimeReason || "None";
+        const dtNote = c.downtimeNote || "-";
+        const hasDt = dtMins > 0 || (dtReason !== "None");
+        const dtHtml = hasDt
+          ? `<span class="badge badge-downtime">${dtMins} min • ${dtReason}</span><br><small style="color:#6b7280">${dtNote}</small>`
+          : `<span style="color:#9ca3af">No stoppage</span>`;
+
         return `
           <tr class="${c.batch === "New Latex Batch" ? "batch-new" : ""}">
             <td><strong>${c.label}</strong><br><small style="color:#6b7280">${c.batch}</small></td>
             <td>Start: ${c.startTemp ?? "-"}°C<br>End: ${c.endTemp !== null ? c.endTemp + "°C" : "-"}</td>
             <td>ZnO: ${c.zno}<br>SSF: ${c.ssf}</td>
             <td>${c.gelTime}</td>
+            <td>${dtHtml}</td>
             <td>${badges || "<span style='color:#9ca3af'>None</span>"}</td>
             <td><strong>${totals.total}</strong></td>
             <td><button class="btn-danger" onclick="deleteCycle(${c.id})">Delete</button></td>
@@ -546,11 +627,11 @@
     }
 
     function exportCSV() {
-      const rows = [["Cycle", "Batch", "StartTemp_C", "EndTemp_C", "ZnO", "SSF", "GelTime_s", "HeatMark", "LooseSkin", "Unclassified", "TotalDefects", "Details"]];
+      const rows = [["Cycle", "Batch", "StartTemp_C", "EndTemp_C", "ZnO", "SSF", "GelTime_s", "Downtime_Mins", "Downtime_Reason", "Downtime_Note", "HeatMark", "LooseSkin", "Unclassified", "TotalDefects", "Details"]];
       cycles.forEach(c => {
         const t = getDefectTotals(c);
         const details = c.defects.map(d => `${d.mould} - ${d.qty} (${d.type})`).join(" | ");
-        rows.push([c.label, c.batch, c.startTemp ?? "", c.endTemp ?? "", c.zno, c.ssf, c.gelTime, t.heat, t.skin, t.other, t.total, details]);
+        rows.push([c.label, c.batch, c.startTemp ?? "", c.endTemp ?? "", c.zno, c.ssf, c.gelTime, c.downtimeMins || 0, c.downtimeReason || "None", c.downtimeNote || "-", t.heat, t.skin, t.other, t.total, details]);
       });
       const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
