@@ -3,124 +3,229 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title> Latex Mind — Dunlop pillow Production Dashboard</title>
+  <title> Latex Mind — Dunlop pillow Production Display</title>
   <meta name="theme-color" content="#0f5132" />
   <link rel="manifest" href="manifest.json" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #f4f7f6;
+      --bg: #eef3f0;
       --card: #ffffff;
-      --primary: #0f5132;
-      --primary-light: #e8f3ee;
-      --accent: #198754;
+      --primary: #0b462b;
+      --primary-light: #e6f4ec;
       --warn: #b45309;
       --warn-bg: #fef3c7;
       --danger: #b91c1c;
       --danger-bg: #fee2e2;
       --info: #1d4ed8;
       --info-bg: #dbeafe;
-      --text: #1f2937;
+      --purple: #6d28d9;
+      --purple-bg: #ede9fe;
+      --text: #111827;
       --muted: #6b7280;
-      --border: #e5e7eb;
+      --border: #dce5e0;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 16px; line-height: 1.5; }
 
     header {
-      background: linear-gradient(135deg, #0f5132, #1b6b45);
+      background: linear-gradient(135deg, #073520, #0f5132 55%, #198754);
       color: #fff;
-      padding: 18px 22px;
-      border-radius: 12px;
+      padding: 20px 24px;
+      border-radius: 16px;
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
-      box-shadow: 0 4px 12px rgba(15, 81, 50, 0.15);
+      gap: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 24px rgba(11, 70, 43, 0.18);
     }
-    header h1 { font-size: 1.35rem; font-weight: 700; }
-    header p { font-size: 0.85rem; opacity: 0.9; }
+    .brand-row { display: flex; align-items: center; gap: 14px; }
+    .brand-logo {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(255,255,255,0.16);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.15rem;
+      border: 1px solid rgba(255,255,255,0.28);
+    }
+    header h1 { font-size: 1.38rem; font-weight: 800; }
+    header p { font-size: 0.84rem; opacity: 0.9; }
 
     .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
     button {
       cursor: pointer;
       border: none;
-      border-radius: 8px;
-      padding: 9px 14px;
-      font-size: 0.85rem;
-      font-weight: 600;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.84rem;
+      font-weight: 700;
       transition: 0.15s ease;
     }
     .btn-light { background: #fff; color: var(--primary); }
     .btn-light:hover { background: var(--primary-light); }
+    .btn-accent { background: #fde047; color: #1f2937; }
+    .btn-accent:hover { background: #facc15; }
     .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: #0b3d26; }
+    .btn-primary:hover { background: #07331f; }
     .btn-secondary { background: #e5e7eb; color: var(--text); }
     .btn-secondary:hover { background: #d1d5db; }
-    .btn-danger { background: var(--danger-bg); color: var(--danger); padding: 5px 10px; font-size: 0.78rem; }
+    .btn-purple { background: var(--purple); color: #fff; }
+    .btn-purple:hover { background: #5b21b6; }
+    .btn-danger { background: var(--danger-bg); color: var(--danger); padding: 6px 10px; font-size: 0.78rem; }
+
+    .status-banner {
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .status-ok { background: #dcfce7; color: #14532d; border-color: #86efac; }
+    .status-warn { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+    .status-alert { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+    .status-pill {
+      background: rgba(255,255,255,0.78);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+
+    .spotlight-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 900px) {
+      .spotlight-grid { grid-template-columns: 1fr; }
+    }
+
+    .spotlight-card {
+      background: linear-gradient(145deg, #ffffff, #f7fbf9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    }
+    .spotlight-header {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .spotlight-title { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--primary); }
+    .latest-badge {
+      background: var(--primary-light); color: var(--primary);
+      padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 700;
+    }
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      .metrics-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+    .mini-box {
+      background: #f3f6f4;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .mini-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
+    .mini-val { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-top: 2px; }
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
     .kpi-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
+      border-radius: 14px;
+      padding: 15px 16px;
     }
-    .kpi-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; font-weight: 600; }
-    .kpi-value { font-size: 1.5rem; font-weight: 700; margin-top: 4px; color: var(--primary); }
-    .kpi-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .kpi-label { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+    .kpi-value { font-size: 1.55rem; font-weight: 800; margin-top: 4px; color: var(--primary); }
+    .kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
 
     .main-grid {
       display: grid;
-      grid-template-columns: 370px 1fr;
+      grid-template-columns: 390px 1fr;
       gap: 18px;
       align-items: start;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 950px) {
       .main-grid { grid-template-columns: 1fr; }
     }
+
+    body.display-mode .form-aside { display: none; }
+    body.display-mode .main-grid { grid-template-columns: 1fr; }
+    body.display-mode .kpi-value { font-size: 2rem; }
 
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 16px;
       margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
-    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: var(--primary); }
+    .card-title { font-size: 1rem; font-weight: 800; margin-bottom: 12px; color: var(--primary); }
 
     .section-box {
       background: #f9fafb;
       border: 1px solid #e5e7eb;
-      border-radius: 9px;
-      padding: 11px;
+      border-radius: 11px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .batch-card-box {
+      background: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      border-radius: 11px;
+      padding: 12px;
       margin-bottom: 12px;
     }
     .section-subtitle {
-      font-size: 0.82rem;
-      font-weight: 700;
+      font-size: 0.83rem;
+      font-weight: 800;
       color: #111827;
       margin-bottom: 8px;
     }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .form-group { margin-bottom: 10px; }
-    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: #374151; }
+    label { display: block; font-size: 0.77rem; font-weight: 700; margin-bottom: 4px; color: #374151; }
     input, select {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid #d1d5db;
-      border-radius: 7px;
-      font-size: 0.85rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
       background: #fff;
+    }
+
+    .card-preview-wrap {
+      margin-top: 8px;
+      display: none;
+      border: 1px dashed #a78bfa;
+      border-radius: 8px;
+      padding: 8px;
+      background: #fff;
+    }
+    .card-preview-wrap img {
+      max-width: 100%;
+      max-height: 150px;
+      border-radius: 6px;
+      display: block;
+      margin-bottom: 8px;
     }
 
     .defect-item {
@@ -152,41 +257,105 @@
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     th, td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-    th { background: #f9fafb; font-weight: 700; color: #374151; white-space: nowrap; }
+    th { background: #f8faf9; font-weight: 700; color: #374151; white-space: nowrap; }
     tr.batch-new td:first-child { border-left: 4px solid var(--warn); }
 
     .badge {
       display: inline-block;
-      padding: 2px 7px;
+      padding: 2px 8px;
       border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 600;
+      font-size: 0.71rem;
+      font-weight: 700;
       margin: 1px 2px 1px 0;
     }
     .badge-heat { background: var(--warn-bg); color: var(--warn); }
     .badge-skin { background: var(--danger-bg); color: var(--danger); }
     .badge-other { background: #e5e7eb; color: #374151; }
     .badge-downtime { background: var(--info-bg); color: var(--info); }
+    .badge-shift { background: #dcfce7; color: #166534; }
+    .badge-card { background: var(--purple-bg); color: var(--purple); }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1>Melkam Latex Mind — Dunlop Production Log</h1>
-      <p>8-Cycle Baseline + Live Batch, Temp, ZnO/SSF/Gel Time, Downtime & Defect Indexer</p>
+    <div class="brand-row">
+      <div class="brand-logo">MLM</div>
+      <div>
+        <h1>Melkam Latex Mind — Dunlop Production Display</h1>
+        <p>Live Shift Screen • Date/Shift, Batch Card Setup, Equipment Downtime & Defects</p>
+      </div>
     </div>
     <div class="btn-group">
+      <button class="btn-accent" id="displayModeBtn" onclick="toggleDisplayMode()">TV / Display View</button>
       <button class="btn-light" onclick="exportCSV()">Export CSV (Excel)</button>
       <button class="btn-light" onclick="resetDefaultData()">Reset 8 Cycles</button>
     </div>
   </header>
 
+  <div class="status-banner status-ok" id="statusBanner"></div>
+
+  <div class="spotlight-grid" id="spotlightGrid"></div>
+
   <section class="kpi-grid" id="kpiGrid"></section>
 
   <div class="main-grid">
-    <aside class="card">
+    <aside class="card form-aside">
       <div class="card-title">Log New Cycle</div>
       <form id="cycleForm" onsubmit="addCycle(event)">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Production Date</label>
+            <input type="date" id="prodDate" required />
+          </div>
+          <div class="form-group">
+            <label>Production Shift</label>
+            <select id="prodShift">
+              <option value="Day">Day Shift</option>
+              <option value="Night">Night Shift</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="batch-card-box">
+          <div class="section-subtitle" style="color:#5b21b6;">Latex Batch Lab Card (Image Upload & Auto-Setup)</div>
+          <div class="form-group">
+            <label>Upload Batch Lab Card Photo</label>
+            <input type="file" id="batchCardFile" accept="image/*" onchange="handleBatchCardUpload(event)" />
+          </div>
+
+          <div class="card-preview-wrap" id="batchCardPreviewWrap">
+            <img id="batchCardImg" src="" alt="Latex Batch Card Preview" />
+            <div class="form-row">
+              <div class="form-group">
+                <label>Batch Code / Ref</label>
+                <input type="text" id="cardBatchCode" placeholder="e.g. LB-2026-11" />
+              </div>
+              <div class="form-group">
+                <label>Card Temp (°C)</label>
+                <input type="number" step="0.1" id="cardTemp" placeholder="24.5" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Card ZnO</label>
+                <input type="text" id="cardZno" placeholder="13.5 (15s-100ml)" />
+              </div>
+              <div class="form-group">
+                <label>Card SSF</label>
+                <input type="text" id="cardSsf" placeholder="6.5 (28s-100ml)" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Card Gel Time (sec)</label>
+              <input type="text" id="cardGelTime" placeholder="2.25" />
+            </div>
+            <button type="button" class="btn-purple" style="width:100%;" onclick="applyBatchCardToForm()">
+              Auto-Setup Cycle Form from Card
+            </button>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Cycle Label</label>
@@ -233,23 +402,42 @@
           <div class="form-row">
             <div class="form-group">
               <label>Downtime (Minutes)</label>
-              <input type="number" min="0" id="downtimeMins" placeholder="e.g. 30" />
+              <input type="number" min="0" id="downtimeMins" placeholder="e.g. 25" />
             </div>
             <div class="form-group">
-              <label>Stoppage Reason</label>
-              <select id="downtimeReason">
-                <option value="None">None (Normal)</option>
-                <option value="Raw Latex Shortage">Raw Latex Shortage</option>
-                <option value="Oakes / Foaming Issue">Oakes / Foaming Issue</option>
-                <option value="Steam Tunnel / Mould Issue">Steam Tunnel / Mould Issue</option>
-                <option value="Power / Utility Stoppage">Power / Utility Stoppage</option>
-                <option value="Other Stoppage">Other Stoppage</option>
+              <label>Maintained By</label>
+              <select id="maintainedBy">
+                <option value="None">None / Normal</option>
+                <option value="Electrician">Electrician</option>
+                <option value="Engineer">Engineer</option>
               </select>
             </div>
           </div>
+
+          <div class="form-group">
+            <label>Downtime Reason</label>
+            <select id="downtimeReason">
+              <option value="None">None (Normal Operation)</option>
+              <option value="Low Steam Pressure">Low Steam Pressure</option>
+              <option value="Main Conveyer (Filling Belt)">Main Conveyer (Filling Belt)</option>
+              <option value="Main Conveyer (Stripping Belt)">Main Conveyer (Stripping Belt)</option>
+              <option value="Transfer Cart">Transfer Cart</option>
+              <option value="Steam Tunnel">Steam Tunnel</option>
+              <option value="Wax Spray Gun">Wax Spray Gun</option>
+              <option value="Main Panel Board Filling Point">Main Panel Board Filling Point</option>
+              <option value="Main Panel Board Stripping Point">Main Panel Board Stripping Point</option>
+              <option value="Foamer">Foamer</option>
+              <option value="Blender">Blender</option>
+              <option value="Latex Pump">Latex Pump</option>
+              <option value="Oakes Machine Panel Board">Oakes Machine Panel Board</option>
+              <option value="Electricity">Electricity</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
           <div class="form-group" style="margin-bottom:0;">
-            <label>Downtime Notes</label>
-            <input type="text" id="downtimeNote" placeholder="e.g. Waiting for new latex batch / mould change" />
+            <label>Downtime Remarks</label>
+            <input type="text" id="downtimeNote" placeholder="e.g. Belt alignment / pressure drop details" />
           </div>
         </div>
 
@@ -276,27 +464,32 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Indexed Cycles & Downtime Table</div>
+        <div class="card-title">Indexed Cycles, Batch Cards & Downtime Log</div>
         <div class="filter-bar">
-          <input type="text" id="searchInput" placeholder="Search mould, defect, downtime..." oninput="renderTable()" />
+          <input type="text" id="searchInput" placeholder="Search date, shift, reason, mould..." oninput="renderTable()" />
+          <select id="shiftFilter" onchange="renderTable()">
+            <option value="ALL">All Shifts</option>
+            <option value="Day">Day Shift</option>
+            <option value="Night">Night Shift</option>
+          </select>
           <select id="batchFilter" onchange="renderTable()">
             <option value="ALL">All Batches</option>
             <option value="Initial Batch">Initial Batch</option>
             <option value="New Latex Batch">New Latex Batch</option>
           </select>
           <select id="downtimeFilter" onchange="renderTable()">
-            <option value="ALL">All Cycles (With/Without Downtime)</option>
-            <option value="HAS_DOWNTIME">Only With Downtime</option>
+            <option value="ALL">All Cycles</option>
+            <option value="HAS_DOWNTIME">With Downtime Only</option>
           </select>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Cycle / Batch</th>
+                <th>Date / Shift / Cycle</th>
                 <th>Temp (°C)</th>
-                <th>ZnO & SSF</th>
-                <th>Gel Time</th>
+                <th>ZnO, SSF & Gel</th>
+                <th>Batch Card</th>
                 <th>Production Downtime</th>
                 <th>Defects Breakdown</th>
                 <th>Total Def.</th>
@@ -313,9 +506,10 @@
   <script>
     const INITIAL_CYCLES = [
       {
-        id: 1, label: "1st Cycle", batch: "Initial Batch", startTemp: 23.4, endTemp: 23.5,
-        zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "-",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 1, date: "2026-11-20", shift: "Day", label: "1st Cycle", batch: "Initial Batch",
+        startTemp: 23.4, endTemp: 23.5, zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "-",
+        batchCardRef: "BLC-01", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Estd", type: "Unclassified", qty: 3 },
           { mould: "Queen", type: "Unclassified", qty: 2 },
@@ -324,9 +518,10 @@
         ]
       },
       {
-        id: 2, label: "2nd Cycle", batch: "Initial Batch", startTemp: 23.5, endTemp: 23.5,
-        zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "-",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 2, date: "2026-11-20", shift: "Day", label: "2nd Cycle", batch: "Initial Batch",
+        startTemp: 23.5, endTemp: 23.5, zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "-",
+        batchCardRef: "BLC-01", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Queen", type: "Heat Mark", qty: 1 },
           { mould: "Estd.mnzn", type: "Loose Skin", qty: 1 },
@@ -336,9 +531,10 @@
         ]
       },
       {
-        id: 3, label: "3rd Cycle", batch: "Initial Batch", startTemp: 23.4, endTemp: 23.5,
-        zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "2.31",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 3, date: "2026-11-20", shift: "Day", label: "3rd Cycle", batch: "Initial Batch",
+        startTemp: 23.4, endTemp: 23.5, zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "2.31",
+        batchCardRef: "BLC-01", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Queen", type: "Heat Mark", qty: 2 },
           { mould: "Estd", type: "Heat Mark", qty: 2 },
@@ -349,9 +545,10 @@
         ]
       },
       {
-        id: 4, label: "4th Cycle", batch: "Initial Batch", startTemp: 23.5, endTemp: 23.6,
-        zno: "14.0 (15s-100ml)", ssf: "6.9 (27s-100ml)", gelTime: "2.25",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 4, date: "2026-11-20", shift: "Day", label: "4th Cycle", batch: "Initial Batch",
+        startTemp: 23.5, endTemp: 23.6, zno: "14.0 (15s-100ml)", ssf: "6.9 (27s-100ml)", gelTime: "2.25",
+        batchCardRef: "BLC-01", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Estd", type: "Heat Mark", qty: 2 },
           { mould: "F.C. T2", type: "Heat Mark", qty: 1 },
@@ -362,9 +559,10 @@
         ]
       },
       {
-        id: 5, label: "5th Cycle", batch: "Initial Batch", startTemp: 23.6, endTemp: 23.7,
-        zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "2.28",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 5, date: "2026-11-20", shift: "Day", label: "5th Cycle", batch: "Initial Batch",
+        startTemp: 23.6, endTemp: 23.7, zno: "13.5 (15s-100ml)", ssf: "6.5 (28s-100ml)", gelTime: "2.28",
+        batchCardRef: "BLC-01", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Queen", type: "Heat Mark", qty: 1 },
           { mould: "Estd.mnzn", type: "Loose Skin", qty: 1 },
@@ -374,9 +572,10 @@
         ]
       },
       {
-        id: 6, label: "6th Cycle", batch: "New Latex Batch", startTemp: 24.9, endTemp: 25.2,
-        zno: "14.5 (15s-100ml)", ssf: "6.9 (27s-100ml)", gelTime: "2.22",
-        downtimeMins: 0, downtimeReason: "Raw Latex Shortage", downtimeNote: "Started after new latex batch arrival",
+        id: 6, date: "2026-11-21", shift: "Day", label: "6th Cycle", batch: "New Latex Batch",
+        startTemp: 24.9, endTemp: 25.2, zno: "14.5 (15s-100ml)", ssf: "6.9 (27s-100ml)", gelTime: "2.22",
+        batchCardRef: "BLC-NEW-02", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "New batch started",
         defects: [
           { mould: "Estd", type: "Heat Mark", qty: 2 },
           { mould: "F.C. T3", type: "Heat Mark", qty: 1 },
@@ -385,9 +584,10 @@
         ]
       },
       {
-        id: 7, label: "7th Cycle", batch: "New Latex Batch", startTemp: 25.5, endTemp: 25.9,
-        zno: "14.0 (15s-100ml)", ssf: "6.2 (29s-100ml)", gelTime: "2.17",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 7, date: "2026-11-21", shift: "Day", label: "7th Cycle", batch: "New Latex Batch",
+        startTemp: 25.5, endTemp: 25.9, zno: "14.0 (15s-100ml)", ssf: "6.2 (29s-100ml)", gelTime: "2.17",
+        batchCardRef: "BLC-NEW-02", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Monozone", type: "Loose Skin", qty: 1 },
           { mould: "Baby", type: "Heat Mark", qty: 2 },
@@ -396,9 +596,10 @@
         ]
       },
       {
-        id: 8, label: "8th Cycle", batch: "New Latex Batch", startTemp: 26.3, endTemp: null,
-        zno: "11.2 (19s-100ml)", ssf: "6.0 (29s-100ml)", gelTime: "2.32+",
-        downtimeMins: 0, downtimeReason: "None", downtimeNote: "-",
+        id: 8, date: "2026-11-21", shift: "Night", label: "8th Cycle", batch: "New Latex Batch",
+        startTemp: 26.3, endTemp: null, zno: "11.2 (19s-100ml)", ssf: "6.0 (29s-100ml)", gelTime: "2.32+",
+        batchCardRef: "BLC-NEW-02", batchCardImg: "",
+        downtimeMins: 0, downtimeReason: "None", maintainedBy: "None", downtimeNote: "-",
         defects: [
           { mould: "Monozone", type: "Loose Skin", qty: 3 },
           { mould: "Baby", type: "Loose Skin", qty: 3 },
@@ -411,9 +612,18 @@
       }
     ];
 
-    const STORAGE_KEY = "melkam_latex_cycles_v2";
+    const STORAGE_KEY = "melkam_latex_cycles_v4";
     let cycles = loadCycles();
+    let currentCardImageData = "";
     let tempChart, defectChart;
+
+    function setTodayDateDefault() {
+      const dateInput = document.getElementById("prodDate");
+      if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split("T")[0];
+        dateInput.value = today;
+      }
+    }
 
     function loadCycles() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -422,13 +632,72 @@
     }
 
     function saveCycles() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cycles));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cycles));
+      } catch (e) {
+        const lightCycles = cycles.map(c => ({ ...c, batchCardImg: "" }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightCycles));
+      }
     }
 
     function resetDefaultData() {
       cycles = JSON.parse(JSON.stringify(INITIAL_CYCLES));
       saveCycles();
       renderAll();
+    }
+
+    function toggleDisplayMode() {
+      document.body.classList.toggle("display-mode");
+      const active = document.body.classList.contains("display-mode");
+      document.getElementById("displayModeBtn").textContent = active ? "Exit Display View" : "TV / Display View";
+    }
+
+    function handleBatchCardUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        currentCardImageData = ev.target.result;
+        document.getElementById("batchCardImg").src = currentCardImageData;
+        document.getElementById("batchCardPreviewWrap").style.display = "block";
+
+        // Try smart extraction from filename if numbers/batch tags exist
+        const cleanName = file.name.replace(/\.[^/.]+$/, "");
+        const codeMatch = cleanName.match(/[A-Za-z]{2,}[-_ ]?[0-9]+[-_A-Za-z0-9]*/);
+        const tempMatch = cleanName.match(/(?:temp|t)[-_ ]?(\d{2}(?:\.\d)?)/i);
+        const gelMatch = cleanName.match(/(?:gel|g)[-_ ]?(\d\.\d{1,2})/i);
+
+        document.getElementById("cardBatchCode").value = codeMatch ? codeMatch[0] : cleanName;
+        if (tempMatch) document.getElementById("cardTemp").value = tempMatch[1];
+        if (gelMatch) document.getElementById("cardGelTime").value = gelMatch[1];
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function applyBatchCardToForm() {
+      const code = document.getElementById("cardBatchCode").value.trim();
+      const temp = document.getElementById("cardTemp").value.trim();
+      const zno = document.getElementById("cardZno").value.trim();
+      const ssf = document.getElementById("cardSsf").value.trim();
+      const gel = document.getElementById("cardGelTime").value.trim();
+
+      if (temp) {
+        document.getElementById("startTemp").value = temp;
+      }
+      if (zno) {
+        document.getElementById("znoInfo").value = zno;
+      }
+      if (ssf) {
+        document.getElementById("ssfInfo").value = ssf;
+      }
+      if (gel) {
+        document.getElementById("gelTime").value = gel;
+      }
+      if (code) {
+        document.getElementById("batchType").value = "New Latex Batch";
+      }
+      alert("Batch Lab Card parameters applied to the Cycle Form!");
     }
 
     function addDefectRow(mould = "Estd", type = "Heat Mark", qty = 1) {
@@ -461,10 +730,15 @@
       const endVal = document.getElementById("endTemp").value;
       const dtMins = parseInt(document.getElementById("downtimeMins").value, 10) || 0;
       const dtReason = document.getElementById("downtimeReason").value;
+      const maintBy = document.getElementById("maintainedBy").value;
       const dtNote = document.getElementById("downtimeNote").value.trim() || "-";
+      const cardCode = document.getElementById("cardBatchCode").value.trim() || "-";
+      const savedDate = document.getElementById("prodDate").value || new Date().toISOString().split("T")[0];
 
       cycles.push({
         id: Date.now(),
+        date: savedDate,
+        shift: document.getElementById("prodShift").value,
         label: document.getElementById("cycleLabel").value.trim(),
         batch: document.getElementById("batchType").value,
         startTemp: parseFloat(document.getElementById("startTemp").value),
@@ -472,14 +746,20 @@
         zno: document.getElementById("znoInfo").value.trim() || "-",
         ssf: document.getElementById("ssfInfo").value.trim() || "-",
         gelTime: document.getElementById("gelTime").value.trim() || "-",
+        batchCardRef: cardCode,
+        batchCardImg: currentCardImageData,
         downtimeMins: dtMins,
-        downtimeReason: dtMins > 0 && dtReason === "None" ? "Other Stoppage" : dtReason,
+        downtimeReason: dtMins > 0 && dtReason === "None" ? "Other" : dtReason,
+        maintainedBy: dtMins > 0 ? maintBy : "None",
         downtimeNote: dtNote,
         defects
       });
 
       saveCycles();
       e.target.reset();
+      setTodayDateDefault();
+      currentCardImageData = "";
+      document.getElementById("batchCardPreviewWrap").style.display = "none";
       document.getElementById("defectRows").innerHTML = "";
       addDefectRow();
       renderAll();
@@ -501,6 +781,86 @@
       return { heat, skin, other, total: heat + skin + other };
     }
 
+    function renderBannerAndSpotlight() {
+      const latest = cycles[cycles.length - 1];
+      const banner = document.getElementById("statusBanner");
+      const spot = document.getElementById("spotlightGrid");
+
+      if (!latest) return;
+
+      const latestTemp = Math.max(latest.startTemp || 0, latest.endTemp || 0);
+      const latestDef = getDefectTotals(latest);
+
+      banner.className = "status-banner ";
+      if (latestTemp >= 25.5 || latestDef.skin >= 8) {
+        banner.className += "status-alert";
+        banner.innerHTML = `
+          <div>⚠️ HIGH TEMP / LOOSE SKIN ALERT: Latest temp is ${latestTemp.toFixed(1)}°C with ${latestDef.skin} Loose Skin defects in ${latest.label} (${latest.shift} Shift).</div>
+          <div class="status-pill">${latest.date || "-"} • ${latest.shift} Shift</div>
+        `;
+      } else if (latestTemp >= 24.5) {
+        banner.className += "status-warn";
+        banner.innerHTML = `
+          <div>🔶 TEMPERATURE ELEVATED (${latestTemp.toFixed(1)}°C): Monitor batch stability & gel time closely.</div>
+          <div class="status-pill">${latest.date || "-"} • ${latest.shift} Shift</div>
+        `;
+      } else {
+        banner.className += "status-ok";
+        banner.innerHTML = `
+          <div>✅ PROCESS IN NOMINAL RANGE: Latest latex temperature is ${latestTemp.toFixed(1)}°C (${latest.label}).</div>
+          <div class="status-pill">${latest.date || "-"} • ${latest.shift} Shift</div>
+        `;
+      }
+
+      const mouldMap = {};
+      cycles.forEach(c => c.defects.forEach(d => {
+        mouldMap[d.mould] = (mouldMap[d.mould] || 0) + d.qty;
+      }));
+      const topMoulds = Object.entries(mouldMap).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
+      spot.innerHTML = `
+        <div class="spotlight-card">
+          <div class="spotlight-header">
+            <div class="spotlight-title">Latest Cycle Snapshot</div>
+            <div class="latest-badge">${latest.date || "-"} • ${latest.shift || "Day"} • ${latest.label}</div>
+          </div>
+          <div class="metrics-strip">
+            <div class="mini-box">
+              <div class="mini-label">Latex Temp</div>
+              <div class="mini-val">${latest.startTemp ?? "-"}°C${latest.endTemp !== null ? " → " + latest.endTemp + "°C" : ""}</div>
+            </div>
+            <div class="mini-box">
+              <div class="mini-label">Batch Card</div>
+              <div class="mini-val">${latest.batchCardRef || "-"}</div>
+            </div>
+            <div class="mini-box">
+              <div class="mini-label">Cycle Defects</div>
+              <div class="mini-val" style="color:#b91c1c">${latestDef.total}</div>
+            </div>
+            <div class="mini-box">
+              <div class="mini-label">Downtime</div>
+              <div class="mini-val" style="color:#1d4ed8">${latest.downtimeMins || 0}m</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="spotlight-card">
+          <div class="spotlight-header">
+            <div class="spotlight-title">Top Defect Moulds</div>
+            <div class="latest-badge">Cumulative</div>
+          </div>
+          <div class="metrics-strip">
+            ${topMoulds.map(([m, q]) => `
+              <div class="mini-box">
+                <div class="mini-label">${m}</div>
+                <div class="mini-val">${q}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     function renderKPIs() {
       const totalCycles = cycles.length;
       const allTotals = cycles.map(getDefectTotals);
@@ -514,7 +874,7 @@
         <div class="kpi-card">
           <div class="kpi-label">Logged Cycles</div>
           <div class="kpi-value">${totalCycles}</div>
-          <div class="kpi-sub">Initial + New Batch</div>
+          <div class="kpi-sub">Day & Night Shifts</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Total Defects</div>
@@ -583,16 +943,18 @@
 
     function renderTable() {
       const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const shiftFilter = document.getElementById("shiftFilter").value;
       const batchFilter = document.getElementById("batchFilter").value;
       const downtimeFilter = document.getElementById("downtimeFilter").value;
       const tbody = document.getElementById("cycleTableBody");
 
       const filtered = cycles.filter(c => {
+        if (shiftFilter !== "ALL" && (c.shift || "Day") !== shiftFilter) return false;
         if (batchFilter !== "ALL" && c.batch !== batchFilter) return false;
         const hasDt = (c.downtimeMins || 0) > 0 || (c.downtimeReason && c.downtimeReason !== "None");
         if (downtimeFilter === "HAS_DOWNTIME" && !hasDt) return false;
         if (!q) return true;
-        const blob = `${c.label} ${c.batch} ${c.zno} ${c.ssf} ${c.gelTime} ${c.downtimeMins || 0} ${c.downtimeReason || ""} ${c.downtimeNote || ""} ${c.defects.map(d => d.mould + " " + d.type).join(" ")}`.toLowerCase();
+        const blob = `${c.date || ""} ${c.shift || ""} ${c.label} ${c.batch} ${c.batchCardRef || ""} ${c.zno} ${c.ssf} ${c.gelTime} ${c.downtimeMins || 0} ${c.downtimeReason || ""} ${c.maintainedBy || ""} ${c.downtimeNote || ""} ${c.defects.map(d => d.mould + " " + d.type).join(" ")}`.toLowerCase();
         return blob.includes(q);
       });
 
@@ -605,18 +967,26 @@
 
         const dtMins = c.downtimeMins || 0;
         const dtReason = c.downtimeReason || "None";
+        const maintBy = c.maintainedBy && c.maintainedBy !== "None" ? ` • By: ${c.maintainedBy}` : "";
         const dtNote = c.downtimeNote || "-";
         const hasDt = dtMins > 0 || (dtReason !== "None");
         const dtHtml = hasDt
-          ? `<span class="badge badge-downtime">${dtMins} min • ${dtReason}</span><br><small style="color:#6b7280">${dtNote}</small>`
+          ? `<span class="badge badge-downtime">${dtMins}m • ${dtReason}${maintBy}</span><br><small style="color:#6b7280">${dtNote}</small>`
           : `<span style="color:#9ca3af">No stoppage</span>`;
+
+        const cardHtml = c.batchCardImg
+          ? `<span class="badge badge-card">${c.batchCardRef || "Card"}</span><br><a href="${c.batchCardImg}" target="_blank" style="font-size:0.74rem;color:#6d28d9;font-weight:700;">View Card Image</a>`
+          : `<span class="badge badge-card">${c.batchCardRef || "-"}</span>`;
 
         return `
           <tr class="${c.batch === "New Latex Batch" ? "batch-new" : ""}">
-            <td><strong>${c.label}</strong><br><small style="color:#6b7280">${c.batch}</small></td>
+            <td>
+              <strong>${c.label}</strong> <span class="badge badge-shift">${c.shift || "Day"}</span><br>
+              <small style="color:#6b7280">${c.date || "-"} • ${c.batch}</small>
+            </td>
             <td>Start: ${c.startTemp ?? "-"}°C<br>End: ${c.endTemp !== null ? c.endTemp + "°C" : "-"}</td>
-            <td>ZnO: ${c.zno}<br>SSF: ${c.ssf}</td>
-            <td>${c.gelTime}</td>
+            <td>ZnO: ${c.zno}<br>SSF: ${c.ssf}<br>Gel: ${c.gelTime}</td>
+            <td>${cardHtml}</td>
             <td>${dtHtml}</td>
             <td>${badges || "<span style='color:#9ca3af'>None</span>"}</td>
             <td><strong>${totals.total}</strong></td>
@@ -627,11 +997,11 @@
     }
 
     function exportCSV() {
-      const rows = [["Cycle", "Batch", "StartTemp_C", "EndTemp_C", "ZnO", "SSF", "GelTime_s", "Downtime_Mins", "Downtime_Reason", "Downtime_Note", "HeatMark", "LooseSkin", "Unclassified", "TotalDefects", "Details"]];
+      const rows = [["Date", "Shift", "Cycle", "Batch", "BatchCardRef", "StartTemp_C", "EndTemp_C", "ZnO", "SSF", "GelTime_s", "Downtime_Mins", "Downtime_Reason", "Maintained_By", "Downtime_Note", "HeatMark", "LooseSkin", "Unclassified", "TotalDefects", "Details"]];
       cycles.forEach(c => {
         const t = getDefectTotals(c);
         const details = c.defects.map(d => `${d.mould} - ${d.qty} (${d.type})`).join(" | ");
-        rows.push([c.label, c.batch, c.startTemp ?? "", c.endTemp ?? "", c.zno, c.ssf, c.gelTime, c.downtimeMins || 0, c.downtimeReason || "None", c.downtimeNote || "-", t.heat, t.skin, t.other, t.total, details]);
+        rows.push([c.date || "", c.shift || "Day", c.label, c.batch, c.batchCardRef || "-", c.startTemp ?? "", c.endTemp ?? "", c.zno, c.ssf, c.gelTime, c.downtimeMins || 0, c.downtimeReason || "None", c.maintainedBy || "None", c.downtimeNote || "-", t.heat, t.skin, t.other, t.total, details]);
       });
       const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -644,6 +1014,7 @@
     }
 
     function renderAll() {
+      renderBannerAndSpotlight();
       renderKPIs();
       renderCharts();
       renderTable();
@@ -655,6 +1026,7 @@
       });
     }
 
+    setTodayDateDefault();
     addDefectRow();
     renderAll();
   </script>
