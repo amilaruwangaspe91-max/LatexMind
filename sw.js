@@ -1,4 +1,4 @@
-const CACHE_NAME = "melkam-latex-mind-v2";
+const CACHE_NAME = "-latex-mind-v3";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
