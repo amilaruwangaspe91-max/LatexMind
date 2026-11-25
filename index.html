@@ -643,4 +643,469 @@
     function setTodayDateDefault() {
       const dateInput = document.getElementById("prodDate");
       if (dateInput && !dateInput.value) {
-        dateInput.
+        dateInput.value = new Date().toISOString().split("T")[0];
+      }
+    }
+
+    async function seedInitialCyclesIfEmpty() {
+      if (!db) return;
+      const snap = await db.collection(CYCLES_COLLECTION).limit(1).get();
+      if (snap.empty) {
+        const batch = db.batch();
+        INITIAL_CYCLES.forEach((c) => {
+          const ref = db.collection(CYCLES_COLLECTION).doc(String(c.id));
+          batch.set(ref, c);
+        });
+        await batch.commit();
+      }
+    }
+
+    function startRealtimeFirestoreListener() {
+      if (!db) {
+        setSyncStatus("Preview Mode (Add FIREBASE_CONFIG for live multi-user sync)");
+        renderAll();
+        return;
+      }
+      setSyncStatus("Connecting to Firebase Firestore...");
+      seedInitialCyclesIfEmpty().then(() => {
+        db.collection(CYCLES_COLLECTION)
+          .orderBy("id", "asc")
+          .onSnapshot((snapshot) => {
+            const list = [];
+            snapshot.forEach((doc) => {
+              list.push(doc.data());
+            });
+            if (list.length > 0) {
+              cycles = list;
+            }
+            renderAll();
+            setSyncStatus("Live Synced via Firestore • " + new Date().toLocaleTimeString());
+          }, () => {
+            setSyncStatus("Firestore listener error • Check Firestore rules");
+          });
+      });
+    }
+
+    async function resetDefaultData() {
+      cycles = JSON.parse(JSON.stringify(INITIAL_CYCLES));
+      renderAll();
+      if (!db) return;
+      setSyncStatus("Resetting Firestore cycles...");
+      const existing = await db.collection(CYCLES_COLLECTION).get();
+      const batch = db.batch();
+      existing.forEach((doc) => batch.delete(doc.ref));
+      INITIAL_CYCLES.forEach((c) => {
+        batch.set(db.collection(CYCLES_COLLECTION).doc(String(c.id)), c);
+      });
+      await batch.commit();
+      setSyncStatus("Reset to 8 baseline cycles in Firestore");
+    }
+
+    function toggleDisplayMode() {
+      document.body.classList.toggle("display-mode");
+      const active = document.body.classList.contains("display-mode");
+      document.getElementById("displayModeBtn").textContent = active ? "Exit Display View" : "TV / Display View";
+    }
+
+    function compressImageToDataUrl(file, maxWidth = 750, quality = 0.65) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          img.onerror = () => resolve(ev.target.result);
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleBatchCardUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      compressedCardDataUrl = await compressImageToDataUrl(file, 750, 0.65);
+      document.getElementById("batchCardImg").src = compressedCardDataUrl;
+      document.getElementById("batchCardPreviewWrap").style.display = "block";
+
+      const cleanName = file.name.replace(/\.[^/.]+$/, "");
+      const codeMatch = cleanName.match(/[A-Za-z]{2,}[-_ ]?[0-9]+[-_A-Za-z0-9]*/);
+      const tempMatch = cleanName.match(/(?:temp|t)[-_ ]?(\d{2}(?:\.\d)?)/i);
+      const gelMatch = cleanName.match(/(?:gel|g)[-_ ]?(\d\.\d{1,2})/i);
+
+      document.getElementById("cardBatchCode").value = codeMatch ? codeMatch[0] : cleanName;
+      if (tempMatch) document.getElementById("cardTemp").value = tempMatch[1];
+      if (gelMatch) document.getElementById("cardGelTime").value = gelMatch[1];
+    }
+
+    function applyBatchCardToForm() {
+      const code = document.getElementById("cardBatchCode").value.trim();
+      const temp = document.getElementById("cardTemp").value.trim();
+      const zno = document.getElementById("cardZno").value.trim();
+      const ssf = document.getElementById("cardSsf").value.trim();
+      const gel = document.getElementById("cardGelTime").value.trim();
+
+      if (temp) document.getElementById("startTemp").value = temp;
+      if (zno) document.getElementById("znoInfo").value = zno;
+      if (ssf) document.getElementById("ssfInfo").value = ssf;
+      if (gel) document.getElementById("gelTime").value = gel;
+      if (code) document.getElementById("batchType").value = "New Latex Batch";
+      alert("Batch Lab Card parameters applied to the Cycle Form!");
+    }
+
+    function openCardModal(dataUrl) {
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.write(`<title>Batch Lab Card</title><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;"><img src="${dataUrl}" style="max-width:100%;max-height:100vh;"/></body>`);
+      }
+    }
+
+    function addDefectRow(mould = "Estd", type = "Heat Mark", qty = 1) {
+      const container = document.getElementById("defectRows");
+      const div = document.createElement("div");
+      div.className = "defect-item";
+      div.innerHTML = `
+        <input type="text" class="d-mould" value="${mould}" placeholder="Mould" />
+        <select class="d-type">
+          <option value="Heat Mark" ${type === "Heat Mark" ? "selected" : ""}>Heat Mark</option>
+          <option value="Loose Skin" ${type === "Loose Skin" ? "selected" : ""}>Loose Skin</option>
+          <option value="Unclassified" ${type === "Unclassified" ? "selected" : ""}>Unclassified</option>
+        </select>
+        <input type="number" class="d-qty" min="1" value="${qty}" />
+        <button type="button" class="btn-danger" onclick="this.parentElement.remove()">X</button>
+      `;
+      container.appendChild(div);
+    }
+
+    async function addCycle(e) {
+      e.preventDefault();
+      const defects = [];
+      document.querySelectorAll("#defectRows .defect-item").forEach(row => {
+        const mould = row.querySelector(".d-mould").value.trim();
+        const type = row.querySelector(".d-type").value;
+        const qty = parseInt(row.querySelector(".d-qty").value, 10) || 0;
+        if (mould && qty > 0) defects.push({ mould, type, qty });
+      });
+
+      const cycleId = Date.now();
+      const endVal = document.getElementById("endTemp").value;
+      const dtMins = parseInt(document.getElementById("downtimeMins").value, 10) || 0;
+      const dtReason = document.getElementById("downtimeReason").value;
+      const maintBy = document.getElementById("maintainedBy").value;
+      const dtNote = document.getElementById("downtimeNote").value.trim() || "-";
+      const cardCode = document.getElementById("cardBatchCode").value.trim() || "-";
+      const savedDate = document.getElementById("prodDate").value || new Date().toISOString().split("T")[0];
+
+      const newCycle = {
+        id: cycleId,
+        date: savedDate,
+        shift: document.getElementById("prodShift").value,
+        label: document.getElementById("cycleLabel").value.trim(),
+        batch: document.getElementById("batchType").value,
+        startTemp: parseFloat(document.getElementById("startTemp").value),
+        endTemp: endVal !== "" ? parseFloat(endVal) : null,
+        zno: document.getElementById("znoInfo").value.trim() || "-",
+        ssf: document.getElementById("ssfInfo").value.trim() || "-",
+        gelTime: document.getElementById("gelTime").value.trim() || "-",
+        batchCardRef: cardCode,
+        batchCardUrl: compressedCardDataUrl || "",
+        downtimeMins: dtMins,
+        downtimeReason: dtMins > 0 && dtReason === "None" ? "Other" : dtReason,
+        maintainedBy: dtMins > 0 ? maintBy : "None",
+        downtimeNote: dtNote,
+        defects
+      };
+
+      e.target.reset();
+      setTodayDateDefault();
+      compressedCardDataUrl = "";
+      document.getElementById("batchCardPreviewWrap").style.display = "none";
+      document.getElementById("defectRows").innerHTML = "";
+      addDefectRow();
+
+      if (db) {
+        setSyncStatus("Saving to Firestore...");
+        await db.collection(CYCLES_COLLECTION).doc(String(cycleId)).set(newCycle);
+      } else {
+        cycles.push(newCycle);
+        renderAll();
+      }
+    }
+
+    async function deleteCycle(id) {
+      if (db) {
+        await db.collection(CYCLES_COLLECTION).doc(String(id)).delete();
+      } else {
+        cycles = cycles.filter(c => c.id !== id);
+        renderAll();
+      }
+    }
+
+    function getDefectTotals(cycle) {
+      let heat = 0, skin = 0, other = 0;
+      (cycle.defects || []).forEach(d => {
+        if (d.type === "Heat Mark") heat += d.qty;
+        else if (d.type === "Loose Skin") skin += d.qty;
+        else other += d.qty;
+      });
+      return { heat, skin, other, total: heat + skin + other };
+    }
+
+    function renderBannerAndSpotlight() {
+      const latest = cycles[cycles.length - 1];
+      const banner = document.getElementById("statusBanner");
+      const spot = document.getElementById("spotlightGrid");
+
+      if (!latest) return;
+
+      const latestTemp = Math.max(latest.startTemp || 0, latest.endTemp || 0);
+      const latestDef = getDefectTotals(latest);
+
+      banner.className = "status-banner ";
+      if (latestTemp >= 25.5 || latestDef.skin >= 8) {
+        banner.className += "status-alert";
+        banner.innerHTML = `
+          <div>HIGH TEMP / LOOSE SKIN ALERT: Latest temp is ${latestTemp.toFixed(1)}°C with ${latestDef.skin} Loose Skin defects in ${latest.label} (${latest.shift} Shift).</div>
+          <div class="status-pill">${latest.date || "-"} • ${latest.shift} Shift</div>
+        `;
+      } else if (latestTemp >= 24.5) {
+        banner.className += "status-warn";
+        banner.innerHTML = `
+          <div>TEMPERATURE ELEVATED (${latestTemp.toFixed(1)}°C): Monitor batch stability & gel time closely.</div>
+          <div class="status-pill">${latest.date || "-"} • ${latest.shift} Shift</div>
+        `;
+      } else {
+        banner.className += "status-ok";
+        banner.innerHTML = `
+          <div>PROCESS IN NOMINAL RANGE: Latest latex temperature is ${latestTemp.toFixed(1)}°C (${latest.label}).</div>
+          <div class="status-pill">${latest.date || "-"} • ${latest.shift} Shift</div>
+        `;
+      }
+
+      const mouldMap = {};
+      cycles.forEach(c => (c.defects || []).forEach(d => {
+        mouldMap[d.mould] = (mouldMap[d.mould] || 0) + d.qty;
+      }));
+      const topMoulds = Object.entries(mouldMap).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
+      spot.innerHTML = `
+        <div class="spotlight-card">
+          <div class="spotlight-header">
+            <div class="spotlight-title">Latest Cycle Snapshot</div>
+            <div class="latest-badge">${latest.date || "-"} • ${latest.shift || "Day"} • ${latest.label}</div>
+          </div>
+          <div class="metrics-strip">
+            <div class="mini-box">
+              <div class="mini-label">Latex Temp</div>
+              <div class="mini-val">${latest.startTemp ?? "-"}°C${latest.endTemp !== null && latest.endTemp !== "" ? " → " + latest.endTemp + "°C" : ""}</div>
+            </div>
+            <div class="mini-box">
+              <div class="mini-label">Batch Card</div>
+              <div class="mini-val">${latest.batchCardRef || "-"}</div>
+            </div>
+            <div class="mini-box">
+              <div class="mini-label">Cycle Defects</div>
+              <div class="mini-val" style="color:#b91c1c">${latestDef.total}</div>
+            </div>
+            <div class="mini-box">
+              <div class="mini-label">Downtime</div>
+              <div class="mini-val" style="color:#1d4ed8">${latest.downtimeMins || 0}m</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="spotlight-card">
+          <div class="spotlight-header">
+            <div class="spotlight-title">Top Defect Moulds</div>
+            <div class="latest-badge">Cumulative</div>
+          </div>
+          <div class="metrics-strip">
+            ${topMoulds.map(([m, q]) => `
+              <div class="mini-box">
+                <div class="mini-label">${m}</div>
+                <div class="mini-val">${q}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderKPIs() {
+      const totalCycles = cycles.length;
+      const allTotals = cycles.map(getDefectTotals);
+      const totalDefects = allTotals.reduce((a, b) => a + b.total, 0);
+      const totalHeat = allTotals.reduce((a, b) => a + b.heat, 0);
+      const totalSkin = allTotals.reduce((a, b) => a + b.skin, 0);
+      const totalDowntimeMins = cycles.reduce((a, b) => a + (Number(b.downtimeMins) || 0), 0);
+      const maxTemp = Math.max(0, ...cycles.map(c => Math.max(Number(c.startTemp) || 0, Number(c.endTemp) || 0)));
+
+      document.getElementById("kpiGrid").innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Logged Cycles</div>
+          <div class="kpi-value">${totalCycles}</div>
+          <div class="kpi-sub">Day & Night Shifts</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Defects</div>
+          <div class="kpi-value">${totalDefects}</div>
+          <div class="kpi-sub">Across all cycles</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Heat Marks</div>
+          <div class="kpi-value" style="color:#b45309">${totalHeat}</div>
+          <div class="kpi-sub">Thermal / tunnel marks</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Loose Skin</div>
+          <div class="kpi-value" style="color:#b91c1c">${totalSkin}</div>
+          <div class="kpi-sub">Surface peeling / gel</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Downtime</div>
+          <div class="kpi-value" style="color:#1d4ed8">${totalDowntimeMins}m</div>
+          <div class="kpi-sub">Total stoppage logged</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Peak Latex Temp</div>
+          <div class="kpi-value">${maxTemp.toFixed(1)}°C</div>
+          <div class="kpi-sub">Watch &gt; 25.5°C</div>
+        </div>
+      `;
+    }
+
+    function renderCharts() {
+      const labels = cycles.map(c => c.label);
+      const startTemps = cycles.map(c => c.startTemp);
+      const endTemps = cycles.map(c => c.endTemp);
+
+      const heatData = cycles.map(c => getDefectTotals(c).heat);
+      const skinData = cycles.map(c => getDefectTotals(c).skin);
+      const otherData = cycles.map(c => getDefectTotals(c).other);
+
+      if (tempChart) tempChart.destroy();
+      tempChart = new Chart(document.getElementById("tempChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "Start Temp (°C)", data: startTemps, borderColor: "#0f5132", backgroundColor: "#0f5132", tension: 0.25 },
+            { label: "End Temp (°C)", data: endTemps, borderColor: "#dc2626", backgroundColor: "#dc2626", borderDash: [5, 5], tension: 0.25 }
+          ]
+        },
+        options: { responsive: true, scales: { y: { suggestedMin: 22, suggestedMax: 27 } } }
+      });
+
+      if (defectChart) defectChart.destroy();
+      defectChart = new Chart(document.getElementById("defectChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Heat Mark", data: heatData, backgroundColor: "#f59e0b" },
+            { label: "Loose Skin", data: skinData, backgroundColor: "#ef4444" },
+            { label: "Unclassified", data: otherData, backgroundColor: "#9ca3af" }
+          ]
+        },
+        options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+      });
+    }
+
+    function renderTable() {
+      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const shiftFilter = document.getElementById("shiftFilter").value;
+      const batchFilter = document.getElementById("batchFilter").value;
+      const downtimeFilter = document.getElementById("downtimeFilter").value;
+      const tbody = document.getElementById("cycleTableBody");
+
+      const filtered = cycles.filter(c => {
+        if (shiftFilter !== "ALL" && (c.shift || "Day") !== shiftFilter) return false;
+        if (batchFilter !== "ALL" && c.batch !== batchFilter) return false;
+        const hasDt = (Number(c.downtimeMins) || 0) > 0 || (c.downtimeReason && c.downtimeReason !== "None");
+        if (downtimeFilter === "HAS_DOWNTIME" && !hasDt) return false;
+        if (!q) return true;
+        const blob = `${c.date || ""} ${c.shift || ""} ${c.label} ${c.batch} ${c.batchCardRef || ""} ${c.zno} ${c.ssf} ${c.gelTime} ${c.downtimeMins || 0} ${c.downtimeReason || ""} ${c.maintainedBy || ""} ${c.downtimeNote || ""} ${(c.defects || []).map(d => d.mould + " " + d.type).join(" ")}`.toLowerCase();
+        return blob.includes(q);
+      });
+
+      tbody.innerHTML = filtered.map(c => {
+        const totals = getDefectTotals(c);
+        const badges = (c.defects || []).map(d => {
+          const cls = d.type === "Heat Mark" ? "badge-heat" : d.type === "Loose Skin" ? "badge-skin" : "badge-other";
+          return `<span class="badge ${cls}">${d.mould}: ${d.qty} (${d.type})</span>`;
+        }).join("");
+
+        const dtMins = Number(c.downtimeMins) || 0;
+        const dtReason = c.downtimeReason || "None";
+        const maintBy = c.maintainedBy && c.maintainedBy !== "None" ? ` • By: ${c.maintainedBy}` : "";
+        const dtNote = c.downtimeNote || "-";
+        const hasDt = dtMins > 0 || (dtReason !== "None");
+        const dtHtml = hasDt
+          ? `<span class="badge badge-downtime">${dtMins}m • ${dtReason}${maintBy}</span><br><small style="color:#6b7280">${dtNote}</small>`
+          : `<span style="color:#9ca3af">No stoppage</span>`;
+
+        const cardHtml = c.batchCardUrl
+          ? `<span class="badge badge-card">${c.batchCardRef || "Card"}</span><br><a href="#" onclick="openCardModal('${c.batchCardUrl}');return false;" style="font-size:0.74rem;color:#6d28d9;font-weight:700;">Open Card Photo</a>`
+          : `<span class="badge badge-card">${c.batchCardRef || "-"}</span>`;
+
+        return `
+          <tr class="${c.batch === "New Latex Batch" ? "batch-new" : ""}">
+            <td>
+              <strong>${c.label}</strong> <span class="badge badge-shift">${c.shift || "Day"}</span><br>
+              <small style="color:#6b7280">${c.date || "-"} • ${c.batch}</small>
+            </td>
+            <td>Start: ${c.startTemp ?? "-"}°C<br>End: ${c.endTemp !== null && c.endTemp !== "" ? c.endTemp + "°C" : "-"}</td>
+            <td>ZnO: ${c.zno}<br>SSF: ${c.ssf}<br>Gel: ${c.gelTime}</td>
+            <td>${cardHtml}</td>
+            <td>${dtHtml}</td>
+            <td>${badges || "<span style='color:#9ca3af'>None</span>"}</td>
+            <td><strong>${totals.total}</strong></td>
+            <td><button class="btn-danger" onclick="deleteCycle(${c.id})">Delete</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function exportCSV() {
+      const rows = [["Date", "Shift", "Cycle", "Batch", "BatchCardRef", "StartTemp_C", "EndTemp_C", "ZnO", "SSF", "GelTime_s", "Downtime_Mins", "Downtime_Reason", "Maintained_By", "Downtime_Note", "HeatMark", "LooseSkin", "Unclassified", "TotalDefects", "Details"]];
+      cycles.forEach(c => {
+        const t = getDefectTotals(c);
+        const details = (c.defects || []).map(d => `${d.mould} - ${d.qty} (${d.type})`).join(" | ");
+        rows.push([c.date || "", c.shift || "Day", c.label, c.batch, c.batchCardRef || "-", c.startTemp ?? "", c.endTemp ?? "", c.zno, c.ssf, c.gelTime, c.downtimeMins || 0, c.downtimeReason || "None", c.maintainedBy || "None", c.downtimeNote || "-", t.heat, t.skin, t.other, t.total, details]);
+      });
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "melkam_latex_production_cycles.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function renderAll() {
+      renderBannerAndSpotlight();
+      renderKPIs();
+      renderCharts();
+      renderTable();
+    }
+
+    setTodayDateDefault();
+    addDefectRow();
+    startRealtimeFirestoreListener();
+  </script>
+</body>
+</html>
